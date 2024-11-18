@@ -18,16 +18,17 @@ app.get('/', (req, res) => {
 
 // Create a booking
 app.post('/api/bookings', (req, res) => {
-  const { pickup, drop, date, time, passengers } = req.body;
+  const { Name, pickup, drop, date, time, passengers } = req.body;
 
   // Validate input
-  if (!pickup || !drop || !date || !time || !passengers) {
+  if (!Name || !pickup || !drop || !date || !time || !passengers) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
   // Create a booking object
   const newBooking = {
     id: bookings.length + 1,
+    Name, // Include Name
     pickup,
     drop,
     date,
