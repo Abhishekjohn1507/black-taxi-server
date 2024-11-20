@@ -1,8 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = 5000; // Port for the server
+
+// Razorpay credentials
+const razorpay = new Razorpay({
+  key_id: 'YOUR_RAZORPAY_KEY_ID', // Replace with your Razorpay Key ID
+  key_secret: 'YOUR_RAZORPAY_KEY_SECRET', // Replace with your Razorpay Key Secret
+});
 
 // Middleware
 app.use(cors()); // Allow cross-origin requests
@@ -49,6 +57,53 @@ app.post('/api/bookings', (req, res) => {
 // Get all bookings
 app.get('/api/bookings', (req, res) => {
   res.json(bookings);
+});
+
+// Create an order (payment initialization)
+app.post('/api/create-order', async (req, res) => {
+  const { amount } = req.body;
+
+  if (!amount) {
+    return res.status(400).json({ message: 'Amount is required.' });
+  }
+
+  const options = {
+    amount: amount * 100, // Amount in paise (Razorpay requires this format)
+    currency: 'INR',
+    receipt: `receipt_${Date.now()}`,
+  };
+
+  try {
+    const order = await razorpay.orders.create(options);
+    res.status(201).json({
+      orderId: order.id,
+      key: 'YOUR_RAZORPAY_KEY_ID', // Provide the Razorpay Key ID to the frontend
+    });
+  } catch (error) {
+    console.error('Error creating Razorpay order:', error);
+    res.status(500).json({ message: 'Failed to create Razorpay order.' });
+  }
+});
+
+// Verify payment
+app.post('/api/verify-payment', (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return res.status(400).json({ message: 'All payment details are required.' });
+  }
+
+  const generatedSignature = crypto
+    .createHmac('sha256', 'YOUR_RAZORPAY_KEY_SECRET')
+    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+    .digest('hex');
+
+  if (generatedSignature === razorpay_signature) {
+    const bookingId = `booking_${Date.now()}`; // Generate a unique booking ID
+    res.json({ success: true, bookingId });
+  } else {
+    res.status(400).json({ success: false, message: 'Payment verification failed.' });
+  }
 });
 
 // Start the server
