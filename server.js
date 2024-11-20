@@ -6,10 +6,12 @@ const crypto = require('crypto');
 const app = express();
 const PORT = 5000; // Port for the server
 
-// Razorpay credentials
+
+
+// Razorpay credentials from environment variables
 const razorpay = new Razorpay({
-  key_id: 'YOUR_RAZORPAY_KEY_ID', // Replace with your Razorpay Key ID
-  key_secret: 'YOUR_RAZORPAY_KEY_SECRET', // Replace with your Razorpay Key Secret
+  key_id: process.env.RAZORPAY_KEY_ID, // Accessing the key from environment variables
+  key_secret: process.env.RAZORPAY_KEY_SECRET, // Accessing the key secret
 });
 
 // Middleware
@@ -107,6 +109,7 @@ app.post('/api/verify-payment', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
